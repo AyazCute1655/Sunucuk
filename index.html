@@ -3,86 +3,253 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>BOxPvP Kral ları - Minecraft Sunucu</title>
+  <title>BOXPVPKRALLARI - Sunucu</title>
   <style>
-    :root{--bg:#0b1020;--card:#0f1724;--accent:#28a745;--muted:#98a0b3;--glass:rgba(255,255,255,0.04)}
+    /* Creeper-themed color palette */
+    :root{
+      --bg:#07140a;
+      --card:#0b1b11;
+      --accent:#68c04b;
+      --muted:#b9d8b5;
+      --glass:rgba(255,255,255,0.03);
+      --danger:#d94b4b;
+    }
     *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial}
-    body{margin:0;min-height:100vh;background:linear-gradient(180deg,#041223 0%, #071126 100%);color:#e6eef8;display:flex;align-items:center;justify-content:center;padding:24px}
-    .container{width:100%;max-width:920px}
-    .card{background:var(--card);border-radius:12px;padding:24px;box-shadow:0 8px 30px rgba(2,6,23,0.6);backdrop-filter:blur(6px)}
-    header{display:flex;align-items:center;gap:16px;margin-bottom:12px}
-    .logo{width:64px;height:64px;border-radius:8px;background:linear-gradient(135deg,#4f46e5,#06b6d4);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px}
-    h1{margin:0;font-size:20px}
-    p.lead{margin:4px 0 0;color:var(--muted)}
-    .status{display:flex;gap:16px;margin-top:18px;flex-wrap:wrap}
-    .stat{background:var(--glass);padding:14px;border-radius:10px;min-width:160px;flex:1}
-    .stat h3{margin:0;font-size:13px;color:var(--muted)}
-    .stat .value{font-size:20px;font-weight:600;margin-top:6px}
-    .players{margin-top:16px}
+    html,body{height:100%;margin:0}
+    body{background:linear-gradient(180deg,#07140a 0%, #0b2a12 100%);color:var(--muted);display:flex;align-items:flex-start;justify-content:center;padding:28px}
+    .wrap{width:100%;max-width:1000px}
+    .card{background:linear-gradient(180deg,var(--card),rgba(8,28,12,0.95));border-radius:12px;padding:18px;box-shadow:0 10px 40px rgba(2,6,2,0.7);backdrop-filter:blur(6px)}
+
+    /* Navbar */
+    .nav{display:flex;align-items:center;gap:12px;padding:8px 6px;border-bottom:1px solid rgba(255,255,255,0.03);margin-bottom:12px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:48px;height:48px;border-radius:8px;background:linear-gradient(180deg,#6fd25a,#3b8b2a);display:flex;align-items:center;justify-content:center;color:#06220a;font-weight:900;font-size:18px;box-shadow:inset 0 -6px 14px rgba(0,0,0,0.15)}
+    .logo svg{width:36px;height:36px}
+    .title{font-size:18px;color:#eaf8e8;margin:0}
+    .nav-links{margin-left:18px;display:flex;gap:8px}
+    .nav a{color:var(--muted);text-decoration:none;padding:8px 10px;border-radius:8px;font-size:14px}
+    .nav a.active, .nav a:hover{background:rgba(255,255,255,0.02);color:#e9fbe6}
+
+    /* Content layout */
+    .grid{display:grid;grid-template-columns:1fr 300px;gap:16px}
+    .main{padding:8px}
+    .side{padding:8px}
+
+    .panel{background:rgba(0,0,0,0.08);padding:14px;border-radius:10px;margin-bottom:12px}
+    h2{margin:0 0 8px 0;color:#eaf8e8}
+    p{margin:6px 0;color:var(--muted)}
+
+    /* Status card */
+    .status{display:flex;gap:12px;flex-wrap:wrap}
+    .stat{background:var(--glass);padding:12px;border-radius:10px;min-width:140px}
+    .stat .value{font-size:18px;font-weight:700;color:#eaf8e8}
+
+    /* Players */
     .players ul{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-wrap:wrap;gap:8px}
-    .players li{background:#0b1220;padding:6px 10px;border-radius:999px;font-size:13px;color:#cfe8d8}
-    .actions{display:flex;gap:8px;margin-top:18px}
-    .btn{background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03);padding:10px 14px;border-radius:8px;color:inherit;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
-    .btn.primary{background:linear-gradient(180deg,var(--accent),#1e7b3a);color:white;border:none}
-    .small{font-size:13px;color:var(--muted);margin-top:10px}
-    footer{margin-top:16px;color:var(--muted);font-size:13px;text-align:center}
+    .players li{background:#072114;padding:6px 10px;border-radius:999px;font-size:13px;color:#dff7d8}
+
+    /* Buttons */
+    .btn{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03);padding:10px 12px;border-radius:8px;color:inherit;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+    .btn.primary{background:linear-gradient(180deg,var(--accent),#2f8c2f);color:#06220a;border:none}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.03)}
+
+    /* Accordion for rules */
+    .accordion{border-radius:8px;overflow:hidden}
+    .accordion-item{border-bottom:1px solid rgba(255,255,255,0.03)}
+    .acc-head{padding:10px;display:flex;justify-content:space-between;cursor:pointer}
+    .acc-body{padding:10px 12px;background:rgba(0,0,0,0.02);display:none}
+
+    /* Form */
+    .form-row{display:flex;flex-direction:column;gap:6px}
+    input,textarea,select{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);color:var(--muted);padding:8px;border-radius:8px}
+
+    /* Staff */
+    .staff-list{display:flex;flex-direction:column;gap:8px}
+    .staff-item{display:flex;align-items:center;gap:10px}
+    .avatar{width:44px;height:44px;border-radius:8px;background:linear-gradient(180deg,#fff0,#0002);display:flex;align-items:center;justify-content:center;color:#cfe8d8}
+
+    /* FAQ */
+    .faq-item{margin-bottom:8px}
+
+    /* Responsive */
+    @media (max-width:880px){
+      .grid{grid-template-columns:1fr;}
+      .nav-links{display:none}
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="card" id="card">
-      <header>
-        <div class="logo" id="logo">MC</div>
-        <div>
-          <h1 id="serverName">BOXPVPKRALLARI</h1>
-          <p class="lead" id="serverIp">IP: <span id="ipText">boxpvpkrallari.aternos.me</span></p>
-        </div>
-      </header>
-
-      <div class="status">
-        <div class="stat">
-          <h3>Durum</h3>
-          <div class="value" id="status">Yükleniyor...</div>
-          <div class="small" id="versionText"></div>
-        </div>
-
-        <div class="stat">
-          <h3>Oyuncular</h3>
-          <div class="value" id="players">-- / --</div>
-          <div class="small" id="motdText"></div>
+  <div class="wrap">
+    <div class="card">
+      <nav class="nav">
+        <div class="brand">
+          <div class="logo" id="logo">
+            <!-- Creeper face SVG -->
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="2" y="2" width="20" height="20" rx="3" fill="#244d1a" />
+              <rect x="6" y="6" width="3" height="3" fill="#0a1a08" />
+              <rect x="15" y="6" width="3" height="3" fill="#0a1a08" />
+              <rect x="8" y="12" width="8" height="6" fill="#0a1a08" />
+            </svg>
+          </div>
+          <div>
+            <div class="title">BOXPVPKRALLARI</div>
+            <div style="font-size:12px;color:var(--muted)">boxpvpkrallari.aternos.me</div>
+          </div>
         </div>
 
-        <div class="stat">
-          <h3>Sunucu Bilgisi</h3>
-          <div class="value" id="srvInfo">-</div>
-          <div class="small">Otomatik güncellenir</div>
+        <div class="nav-links" role="navigation" aria-label="Ana menü">
+          <a href="#home" class="nav-link active">Ana Sayfa</a>
+          <a href="#rules" class="nav-link">Kurallar</a>
+          <a href="#about" class="nav-link">Sunucu Hakkında</a>
+          <a href="#apply" class="nav-link">Başvuru</a>
+          <a href="#staff" class="nav-link">Yetkililer</a>
+          <a href="#faq" class="nav-link">SSS</a>
         </div>
+      </nav>
+
+      <div class="grid">
+        <main class="main">
+          <!-- HOME -->
+          <section id="home" class="panel">
+            <h2>Ana Sayfa</h2>
+            <p>Sunucu durumunu burada görebilirsin. Aşağıda IP'yi kopyala, sunucuya katıl ve oyuncu listesini görüntüle butonları bulunuyor.</p>
+
+            <div class="status" style="margin-top:12px">
+              <div class="stat">
+                <h3 style="margin:0;font-size:12px;color:var(--muted)">Durum</h3>
+                <div class="value" id="status">Yükleniyor...</div>
+                <div style="font-size:12px;color:var(--muted)" id="versionText"></div>
+              </div>
+
+              <div class="stat">
+                <h3 style="margin:0;font-size:12px;color:var(--muted)">Oyuncular</h3>
+                <div class="value" id="players">-- / --</div>
+                <div style="font-size:12px;color:var(--muted)" id="motdText"></div>
+              </div>
+
+              <div class="stat">
+                <h3 style="margin:0;font-size:12px;color:var(--muted)">Sunucu</h3>
+                <div class="value" id="srvInfo">boxpvpkrallari.aternos.me</div>
+                <div style="font-size:12px;color:var(--muted)">Otomatik güncellenir</div>
+              </div>
+            </div>
+
+            <div class="players panel" id="playersWrap" style="display:none">
+              <strong>Çevrimiçi Oyuncular:</strong>
+              <ul id="playerList"></ul>
+            </div>
+
+            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+              <a class="btn primary" id="joinBtn" href="#">Sunucuya Katıl</a>
+              <button class="btn" id="copyBtn">IP'yi Kopyala</button>
+              <a class="btn ghost" id="discordBtn" href="#" target="_blank">Discord</a>
+            </div>
+
+          </section>
+
+          <!-- RULES -->
+          <section id="rules" class="panel">
+            <h2>Kurallar</h2>
+            <div class="accordion" id="rulesAcc">
+              <div class="accordion-item">
+                <div class="acc-head">1) Genel Davranış <span>+</span></div>
+                <div class="acc-body">Küfür, hakaret ve ayrımcılık yasaktır. Diğer oyunculara saygılı ol.</div>
+              </div>
+              <div class="accordion-item">
+                <div class="acc-head">2) Hile / Exploit <span>+</span></div>
+                <div class="acc-body">Her türlü hile, mod veya exploit kullanımı yasaktır. Tespit edilirse banlanır.</div>
+              </div>
+              <div class="accordion-item">
+                <div class="acc-head">3) Grief / Çalma <span>+</span></div>
+                <div class="acc-body">Başka oyuncunun eşyalarını çalmak veya yapısını yok etmek yasaktır. Yetkili izni olmadan build yapılmaz.</div>
+              </div>
+              <div class="accordion-item">
+                <div class="acc-head">4) Reklam <span>+</span></div>
+                <div class="acc-body">İzin olmadan diğer sunucuların reklamını yapmak yasaktır.</div>
+              </div>
+              <div class="accordion-item">
+                <div class="acc-head">5) Ceza / Uyarılar <span>+</span></div>
+                <div class="acc-body">Kuralları ihlal edenler uyarı, geçici veya kalıcı ban ile cezalandırılır. Ayrıntılar yetkilide saklıdır.</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ABOUT -->
+          <section id="about" class="panel">
+            <h2>Sunucu Hakkında</h2>
+            <p>IP: <strong>boxpvpkrallari.aternos.me</strong></p>
+            <p>Mod: Vanilla / PvP box</p>
+            <p>Sürümler: 1.8 - 1.20 arası (sunucu otomatik uyum sağlayabilir)</p>
+            <p>Kısa açıklama: BoxPvP tarzı hızlı maçlar, adil eşleşme ve eğlenceli komutlar.</p>
+          </section>
+
+          <!-- APPLY -->
+          <section id="apply" class="panel">
+            <h2>Başvuru / Whitelist</h2>
+            <p>Basit başvuru için GitHub Issues kullanıyoruz. Aşağıdaki butonla yeni bir issue açıp başvurunu yapabilirsin. Başvurunda lütfen; MC kullanıcı adın, neden katılmak istediğin ve önceki deneyimin kısa bir özetini yaz.</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+              <a class="btn primary" id="newIssueBtn" href="https://github.com/AyazCute1655/Sunucuk/issues/new?title=Whitelist%20Başvurusu:%20KullanıcıAdı" target="_blank">Yeni Başvuru Oluştur</a>
+              <button class="btn" id="copyTemplateBtn">Başvuru Şablonunu Kopyala</button>
+            </div>
+            <div style="margin-top:10px;color:var(--muted);font-size:13px">İstersen ben Netlify/Forms ya da Google Form ile otomatik toplama da kurarım.</div>
+          </section>
+
+          <!-- STAFF -->
+          <section id="staff" class="panel">
+            <h2>Yetkililer</h2>
+            <div class="staff-list">
+              <div class="staff-item"><div class="avatar">A</div><div><strong>Ayaz</strong><div style="font-size:12px;color:var(--muted)">Sahip / Admin</div></div></div>
+              <div class="staff-item"><div class="avatar">B</div><div><strong>Berke</strong><div style="font-size:12px;color:var(--muted)">Yetkili</div></div></div>
+            </div>
+          </section>
+
+          <!-- FAQ -->
+          <section id="faq" class="panel">
+            <h2>SSS</h2>
+            <div class="faq-item"><strong>Soru:</strong> Sunucu hangi sürümü destekliyor?<br><strong>Cevap:</strong> 1.8 - 1.20 arası (plugin/versiyon farkı olabilir).</div>
+            <div class="faq-item"><strong>Soru:</strong> Nasıl bağlanırım?<br><strong>Cevap:</strong> Minecraft -> Direct Connect -> boxpvpkrallari.aternos.me</div>
+            <div class="faq-item"><strong>Soru:</strong> Başvurular ne kadar sürer?<br><strong>Cevap:</strong> Genelde 24-72 saat içinde dönüş yapılır.</div>
+          </section>
+
+        </main>
+
+        <aside class="side">
+          <div class="panel">
+            <h3>Hızlı Bilgiler</h3>
+            <p><strong>IP:</strong> boxpvpkrallari.aternos.me</p>
+            <p><strong>Durum:</strong> <span id="sideStatus">--</span></p>
+            <p><strong>Online:</strong> <span id="sidePlayers">-- / --</span></p>
+            <div style="margin-top:8px">
+              <a class="btn primary" href="#joinBtn" id="sideJoin">Sunucuya Katıl</a>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Bağış</h3>
+            <p>Sunucuyu ayakta tutmak için bağış kabul ediyoruz. (Henüz aktif değil)</p>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <a class="btn" href="#">Donate</a>
+              <a class="btn" href="#">Oy Ver</a>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Discord</h3>
+            <p>Topluluğumuza katıl: <a id="discordLink" href="#">Discord Davet</a></p>
+          </div>
+        </aside>
       </div>
 
-      <div class="players" id="playersWrap" style="display:none">
-        <strong>Çevrimiçi Oyuncular:</strong>
-        <ul id="playerList"></ul>
-      </div>
-
-      <div class="actions">
-        <a class="btn primary" id="joinBtn" href="#" target="_self">Sunucuya Katıl</a>
-        <button class="btn" id="copyBtn">IP'yi Kopyala</button>
-        <a class="btn" id="discordBtn" href="#" target="_blank">Discord</a>
-      </div>
-
-      <p class="small">Not: Eğer oyuncu listesi boş görünüyorsa, sunucu gizliliği veya API limitleri nedeniyle veri gelmeyebilir.</p>
-
-      <footer>Site hazır — daha fazla özellik istersen (oylama, bağış, web paneli) söyle yeter.</footer>
     </div>
   </div>
 
   <script>
-    // Güncellenen sunucu adresi:
+    // --- Server config
     const SERVER = 'boxpvpkrallari.aternos.me';
-
-    // API: https://api.mcsrvstat.us/2/<server>
     const API = `https://api.mcsrvstat.us/2/${encodeURIComponent(SERVER)}`;
 
+    // --- DOM refs
     const el = {
       status: document.getElementById('status'),
       versionText: document.getElementById('versionText'),
@@ -90,100 +257,86 @@
       motdText: document.getElementById('motdText'),
       playerList: document.getElementById('playerList'),
       playersWrap: document.getElementById('playersWrap'),
-      serverName: document.getElementById('serverName'),
-      ipText: document.getElementById('ipText'),
+      srvInfo: document.getElementById('srvInfo'),
       joinBtn: document.getElementById('joinBtn'),
       copyBtn: document.getElementById('copyBtn'),
       discordBtn: document.getElementById('discordBtn'),
+      sideStatus: document.getElementById('sideStatus'),
+      sidePlayers: document.getElementById('sidePlayers'),
+      sideJoin: document.getElementById('sideJoin')
     };
 
-    // Başlangıç değerleri
-    el.ipText.textContent = SERVER;
-    el.serverName.textContent = SERVER.split('.')[0].toUpperCase();
-
-    // Join buton: tarayıcı tarafından destekleniyorsa minecraft protokolünü açar (Java için).
+    // Init texts
     el.joinBtn.href = `minecraft://${SERVER}`;
+    el.sideJoin.href = `minecraft://${SERVER}`;
+    document.getElementById('srvInfo').textContent = SERVER;
 
-    // Kopyala işlemi
+    // Copy IP
     el.copyBtn.addEventListener('click', async () => {
-      try {
+      try{
         await navigator.clipboard.writeText(SERVER);
         el.copyBtn.textContent = 'Kopyalandı ✓';
-        setTimeout(()=> el.copyBtn.textContent = "IP'yi Kopyala", 1500);
-      } catch(e){
-        alert('Kopyalama başarısız: ' + e);
-      }
+        setTimeout(()=> el.copyBtn.textContent = "IP'yi Kopyala",1500);
+      }catch(e){alert('Kopyalama başarısız: '+e)}
     });
 
-    // Discord butonu: istersen buraya sunucu Discord invite linkini ekleyebilirsin
-    el.discordBtn.href = '#';
+    // Copy application template
+    document.getElementById('copyTemplateBtn').addEventListener('click', async ()=>{
+      const template = `Kullanıcı adı:\nNeden sunucuya katılmak istiyorsun?:\nDeneyimin (kısa):\nDil/Yaş (isteğe bağlı):`;
+      try{await navigator.clipboard.writeText(template);alert('Başvuru şablonu kopyalandı. Yeni issue açıp yapıştırabilirsin.');}catch(e){alert('Kopyalama hatası: '+e)}
+    });
 
-    // Sunucu bilgisini çek ve DOM'u güncelle
-    async function fetchServer() {
-      el.status.textContent = 'Yükleniyor...';
-      try {
+    // Accordion behaviour
+    document.querySelectorAll('.acc-head').forEach(h=>{
+      h.addEventListener('click', ()=>{
+        const body = h.nextElementSibling;
+        const open = body.style.display === 'block';
+        document.querySelectorAll('.acc-body').forEach(b=>b.style.display='none');
+        if(!open) body.style.display='block';
+      });
+    });
+
+    // Navbar smooth highlighting
+    document.querySelectorAll('.nav-link').forEach(a=>{
+      a.addEventListener('click',(e)=>{
+        document.querySelectorAll('.nav-link').forEach(x=>x.classList.remove('active'));
+        a.classList.add('active');
+      });
+    });
+
+    // Fetch server info
+    async function fetchServer(){
+      try{
         const res = await fetch(API);
-        if (!res.ok) throw new Error('API hatası: ' + res.status);
+        if(!res.ok) throw new Error(res.status);
         const data = await res.json();
-
-        if (data.online) {
-          el.status.textContent = 'Çevrimiçi';
-          el.status.style.color = 'var(--accent)';
+        if(data.online){
+          el.status.textContent = 'Çevrimiçi'; el.status.style.color = 'var(--accent)';
           const online = data.players && typeof data.players.online === 'number' ? data.players.online : '--';
           const max = data.players && typeof data.players.max === 'number' ? data.players.max : '--';
           el.players.textContent = `${online} / ${max}`;
+          document.getElementById('sideStatus').textContent = 'Çevrimiçi';
+          document.getElementById('sidePlayers').textContent = `${online} / ${max}`;
 
-          // MOTD
-          if (data.motd && data.motd.clean && data.motd.clean.length) {
-            el.motdText.textContent = data.motd.clean.join(' ');
-          } else {
-            el.motdText.textContent = '';
-          }
+          if(data.motd && data.motd.clean) document.getElementById('motdText').textContent = data.motd.clean.join(' ');
+          if(data.version) document.getElementById('versionText').textContent = `Versiyon: ${data.version}`;
 
-          // Version
-          if (data.version) {
-            el.versionText.textContent = `Versiyon: ${data.version}`;
-          } else {
-            el.versionText.textContent = '';
-          }
-
-          // Server info (adres/port/protocol)
-          const ipPort = data.ip ? data.ip + (data.port ? ':' + data.port : '') : SERVER;
-          el.srvInfo = document.getElementById('srvInfo');
-          if (el.srvInfo) el.srvInfo.textContent = ipPort;
-
-          // Oyuncu listesi
-          if (data.players && Array.isArray(data.players.list) && data.players.list.length) {
-            el.playerList.innerHTML = '';
-            data.players.list.forEach(p => {
-              const li = document.createElement('li');
-              li.textContent = p;
-              el.playerList.appendChild(li);
-            });
-            el.playersWrap.style.display = 'block';
-          } else {
-            el.playersWrap.style.display = 'none';
-          }
+          if(data.players && Array.isArray(data.players.list) && data.players.list.length){
+            el.playerList.innerHTML=''; data.players.list.forEach(p=>{const li=document.createElement('li');li.textContent=p;el.playerList.appendChild(li)});
+            el.playersWrap.style.display='block';
+          } else el.playersWrap.style.display='none';
         } else {
-          el.status.textContent = 'Çevrimdışı';
-          el.status.style.color = '#d65858';
-          el.players.textContent = '-- / --';
-          el.motdText.textContent = '';
-          el.playersWrap.style.display = 'none';
+          el.status.textContent='Çevrimdışı'; el.status.style.color='var(--danger)';
+          el.players.textContent='-- / --'; document.getElementById('sideStatus').textContent='Çevrimdışı'; document.getElementById('sidePlayers').textContent='-- / --';
+          el.playersWrap.style.display='none';
         }
-      } catch (err) {
-        el.status.textContent = 'Hata';
-        el.status.style.color = '#d65858';
-        el.players.textContent = '-- / --';
-        el.motdText.textContent = '';
-        el.playersWrap.style.display = 'none';
-        console.error('Sunucu bilgisi alınamadı:', err);
+      }catch(err){
+        console.error(err); el.status.textContent='Hata'; el.status.style.color='var(--danger)';
       }
     }
+    fetchServer(); setInterval(fetchServer,30000);
 
-    // İlk yükleme ve arkaplanda periyodik yenileme
-    fetchServer();
-    setInterval(fetchServer, 30_000); // her 30 saniyede bir güncelle
+    // Nothing else required after committing HTML: GitHub Pages will auto-deploy. If you want dynamic backend features (forms, DB), extra setup needed.
   </script>
 </body>
 </html>
