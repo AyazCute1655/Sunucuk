@@ -53,11 +53,19 @@
     .btn.primary{background:linear-gradient(180deg,var(--accent),#2f8c2f);color:#06220a;border:none}
     .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.03)}
 
-    /* Accordion for rules */
+    /* Accordion for rules: animated */
     .accordion{border-radius:8px;overflow:hidden}
     .accordion-item{border-bottom:1px solid rgba(255,255,255,0.03)}
-    .acc-head{padding:10px;display:flex;justify-content:space-between;cursor:pointer}
-    .acc-body{padding:10px 12px;background:rgba(0,0,0,0.02);display:none}
+    .acc-head{padding:12px;display:flex;justify-content:space-between;cursor:pointer;align-items:center}
+    .acc-head .title{font-weight:700}
+    .acc-body{max-height:0;overflow:hidden;padding:0 12px;opacity:0;transition:max-height 360ms cubic-bezier(.2,.9,.2,1),opacity 260ms ease,transform 360ms ease}
+    .accordion-item.open .acc-body{opacity:1;padding:10px 12px;transform:translateY(0)}
+    /* small animation for head when opening */
+    .accordion-item .acc-head .chev{transition:transform 300ms ease}
+    .accordion-item.open .acc-head .chev{transform:rotate(45deg) translateY(1px)}
+
+    /* subtle highlight when opening */
+    .accordion-item.open{background:linear-gradient(90deg, rgba(104,192,75,0.05), rgba(0,0,0,0.03));box-shadow:inset 0 -1px 0 rgba(255,255,255,0.01)}
 
     /* Form */
     .form-row{display:flex;flex-direction:column;gap:6px}
@@ -71,15 +79,14 @@
     /* FAQ */
     .faq-item{margin-bottom:8px}
 
-    /* Modal / password gate */
-    .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999}
-    .pwd-box{background:var(--card);padding:18px;border-radius:10px;width:90%;max-width:420px}
-    .pwd-box input{width:100%;padding:10px;font-size:16px}
-
     /* Admin list */
     .admin-list{display:flex;flex-direction:column;gap:10px}
     .admin-item{background:rgba(0,0,0,0.04);padding:10px;border-radius:8px}
     .meta{font-size:12px;color:var(--muted);margin-top:6px}
+
+    /* Rule sound toggle */
+    .sound-toggle{display:inline-flex;align-items:center;gap:8px;margin-left:8px}
+    .sound-toggle input{width:18px;height:18px}
 
     /* Responsive */
     @media (max-width:880px){
@@ -161,26 +168,34 @@
 
           <!-- RULES -->
           <section id="rules" class="panel">
-            <h2>Kurallar</h2>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <h2>Kurallar</h2>
+              <div class="sound-toggle">
+                <label style="font-size:13px;color:var(--muted)">Ses</label>
+                <input type="checkbox" id="ruleSoundToggle" title="Kurallar açılınca ses çal" />
+              </div>
+            </div>
+
+            <p>Kuralları açmak için madde başlıklarına tıklayın. Her açılışta hafif bir ses ve akıcı bir animasyon oynatılacaktır.</p>
             <div class="accordion" id="rulesAcc">
               <div class="accordion-item">
-                <div class="acc-head">1) Genel Davranış <span>+</span></div>
+                <div class="acc-head"><span class="title">1) Genel Davranış</span><span class="chev">+</span></div>
                 <div class="acc-body">Küfür, hakaret ve ayrımcılık yasaktır. Diğer oyunculara saygılı ol.</div>
               </div>
               <div class="accordion-item">
-                <div class="acc-head">2) Hile / Exploit <span>+</span></div>
+                <div class="acc-head"><span class="title">2) Hile / Exploit</span><span class="chev">+</span></div>
                 <div class="acc-body">Her türlü hile, mod veya exploit kullanımı yasaktır. Tespit edilirse banlanır.</div>
               </div>
               <div class="accordion-item">
-                <div class="acc-head">3) Grief / Çalma <span>+</span></div>
+                <div class="acc-head"><span class="title">3) Grief / Çalma</span><span class="chev">+</span></div>
                 <div class="acc-body">Başka oyuncunun eşyalarını çalmak veya yapısını yok etmek yasaktır. Yetkili izni olmadan build yapılmaz.</div>
               </div>
               <div class="accordion-item">
-                <div class="acc-head">4) Reklam <span>+</span></div>
+                <div class="acc-head"><span class="title">4) Reklam</span><span class="chev">+</span></div>
                 <div class="acc-body">İzin olmadan diğer sunucuların reklamını yapmak yasaktır.</div>
               </div>
               <div class="accordion-item">
-                <div class="acc-head">5) Ceza / Uyarılar <span>+</span></div>
+                <div class="acc-head"><span class="title">5) Ceza / Uyarılar</span><span class="chev">+</span></div>
                 <div class="acc-body">Kuralları ihlal edenler uyarı, geçici veya kalıcı ban ile cezalandırılır. Ayrıntılar yetkilide saklıdır.</div>
               </div>
             </div>
@@ -234,12 +249,14 @@
             </div>
           </section>
 
-          <!-- ADMIN: Başvuru Kontrol (password-protected, read-only) -->
+          <!-- ADMIN: Başvuru Kontrol (GitHub OAuth protected) -->
           <section id="admin" class="panel" style="display:none">
             <h2>Başvuru Kontrol (Admin)</h2>
-            <p>Bu panel sadece yetkililer içindir. Şifreyi girdikten sonra açık "whitelist" etiketli issue'ları burada görebilirsin.</p>
+            <p>Bu panel sadece yetkililer içindir. GitHub ile giriş yapıp admin yetkiniz varsa açık "whitelist" etiketli issue'ları burada görebilirsiniz.</p>
             <div style="display:flex;gap:8px;margin-top:8px">
-              <button class="btn primary" id="refreshAdmin">Yenile</button>
+              <a class="btn primary" id="loginBtn" href="/.netlify/functions/login">GitHub ile Giriş</a>
+              <button class="btn" id="logoutBtn" style="display:none">Çıkış</button>
+              <button class="btn" id="refreshAdmin">Yenile</button>
               <button class="btn" id="openIssuesAdmin">Issues Sayfasını Aç</button>
             </div>
             <div id="adminList" style="margin-top:12px" class="admin-list">
@@ -288,153 +305,142 @@
     </div>
   </div>
 
-  <!-- Password modal (hidden by default) -->
-  <div id="pwdOverlay" class="overlay" style="display:none">
-    <div class="pwd-box">
-      <h3>Şifre ile Giriş (Sadece Admin için)</h3>
-      <p style="font-size:13px;color:var(--muted)">Lütfen şifreyi girin. (Bu yöntem client-side'dır — gerçek koruma için sunucu tarafı önerilir.)</p>
-      <input id="pwdInput" type="password" placeholder="Şifre" />
-      <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
-        <button class="btn" id="pwdCancel">İptal</button>
-        <button class="btn primary" id="pwdSubmit">Giriş</button>
-      </div>
-    </div>
-  </div>
-
   <script>
     // --- Server config
     const SERVER = 'boxpvpkrallari.aternos.me';
     const API = `https://api.mcsrvstat.us/2/${encodeURIComponent(SERVER)}`;
 
-    // === PASSWORD PROTECTION (client-side for admin only) ===
-    // Obfuscated password parts (joined at runtime) to make quick source-reading harder
-    const PASS_PARTS = ['q1w2e3r4t5yy6u7', 'ı8o9p0ğ*', 'ü-'];
-    const ACCESS_PASSWORD = PASS_PARTS.join('');
-
-    // State whether authenticated for admin
-    let isAdminAuthed = false;
-
-    const applyNav = document.getElementById('applyNav');
-    const adminNav = document.getElementById('adminNav');
-    const pwdOverlay = document.getElementById('pwdOverlay');
-    const pwdInput = document.getElementById('pwdInput');
-    const pwdSubmit = document.getElementById('pwdSubmit');
-    const pwdCancel = document.getElementById('pwdCancel');
-    const applyFormWrap = document.getElementById('applyForm');
-    const viewIssuesBtn = document.getElementById('viewIssuesBtn');
+    // DOM refs
     const adminSection = document.getElementById('admin');
-    const adminList = document.getElementById('adminList');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
     const refreshAdminBtn = document.getElementById('refreshAdmin');
     const openIssuesAdmin = document.getElementById('openIssuesAdmin');
-    const noGithubBtn = document.getElementById('noGithubBtn');
+    const adminList = document.getElementById('adminList');
 
-    // Make apply publicly accessible (users can now submit without GitHub)
-    applyFormWrap.style.display = 'block';
+    // RULES sound preference
+    const ruleSoundToggle = document.getElementById('ruleSoundToggle');
+    const SOUND_KEY = 'rules_sound_enabled';
+    // initialize toggle from localStorage
+    try{ if(localStorage.getItem(SOUND_KEY) === null) localStorage.setItem(SOUND_KEY,'true'); ruleSoundToggle.checked = localStorage.getItem(SOUND_KEY) === 'true'; }catch(e){}
+    ruleSoundToggle.addEventListener('change', ()=>{ try{ localStorage.setItem(SOUND_KEY, ruleSoundToggle.checked ? 'true' : 'false'); }catch(e){} });
 
-    // Apply nav should scroll to form
-    applyNav.addEventListener('click', (e)=>{ e.preventDefault(); document.getElementById('apply').scrollIntoView({behavior:'smooth'}); });
-
-    // Admin nav opens password modal
-    adminNav.addEventListener('click', (e)=>{ e.preventDefault(); promptPassword('admin'); });
-
-    function promptPassword(target){
-      pwdOverlay.style.display = 'flex';
-      pwdInput.value = '';
-      pwdInput.focus();
-      pwdOverlay.dataset.target = target;
-    }
-
-    pwdCancel.addEventListener('click', ()=>{ pwdOverlay.style.display='none'; });
-
-    pwdSubmit.addEventListener('click', async ()=>{
-      const v = pwdInput.value || '';
-      if(v === ACCESS_PASSWORD){
-        const target = pwdOverlay.dataset.target;
-        pwdOverlay.style.display='none';
-        isAdminAuthed = true;
-        if(target === 'admin'){
-          adminSection.style.display='block';
-          document.getElementById('admin').scrollIntoView({behavior:'smooth'});
-          await fetchAdminIssues();
-        }
-      } else {
-        alert('Şifre yanlış. Tekrar deneyin.');
-      }
-    });
-
-    // Admin buttons
-    if(refreshAdminBtn) refreshAdminBtn.addEventListener('click', ()=>{ fetchAdminIssues(); });
-    if(openIssuesAdmin) openIssuesAdmin.addEventListener('click', ()=>{ window.open('https://github.com/AyazCute1655/Sunucuk/issues','_blank'); });
-
-    // === FORM SUBMISSION: send to FormSubmit (email) via AJAX --> sends to ayazberkalsan1@gmail.com
-    document.getElementById('whitelistForm').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const f = e.target;
-      const mcname = f.mcname.value.trim();
-      const reason = f.reason.value.trim();
-      const experience = f.experience.value.trim();
-      if(!mcname || !reason) { alert('Lütfen gerekli alanları doldurun.'); return; }
-
-      // Prepare form data for FormSubmit AJAX endpoint
-      const fd = new FormData();
-      fd.append('mcname', mcname);
-      fd.append('reason', reason);
-      fd.append('experience', experience);
-      fd.append('_subject', `Whitelist Başvurusu: ${mcname}`);
-      fd.append('_captcha', 'false');
-      // optional _next parameter to redirect after submit
-      // fd.append('_next', window.location.href + '?submitted=1');
-
+    function playOpenSound(){
       try{
-        const endpoint = 'https://formsubmit.co/ajax/ayazberkalsan1@gmail.com';
-        const res = await fetch(endpoint, { method: 'POST', body: fd });
-        const data = await res.json();
-        if(res.ok){
-          alert('Başvurunuz gönderildi — kontrol için e-postayı kontrol edeceğiz. (FormSubmit ilk kullanımda e-posta doğrulaması isteyebilir.)');
-          f.reset();
-        } else {
-          throw new Error(data.message || 'Form gönderimi başarısız');
-        }
-      }catch(err){
-        console.error(err);
-        // fallback: copy to clipboard
-        const text = `Whitelist Başvurusu\n\nKullanıcı adı: ${mcname}\n\nNeden katılmak istiyorsun?: ${reason}\n\nDeneyim: ${experience}`;
-        copyToClipboard(text);
-        alert('Sunucuya gönderilemedi. Başvuru metni panoya kopyalandı; lütfen Discord veya e-posta ile gönderin.');
-      }
-    });
-
-    // No-GitHub fallback: copies filled application text to clipboard
-    noGithubBtn.addEventListener('click', ()=>{
-      const f = document.getElementById('whitelistForm');
-      const mcname = f.mcname.value.trim() || '[Kullanıcı adı]';
-      const reason = f.reason.value.trim() || '[Neden]';
-      const experience = f.experience.value.trim() || '[Deneyim]';
-      const text = `Whitelist Başvurusu\n\nKullanıcı adı: ${mcname}\n\nNeden katılmak istiyorsun?: ${reason}\n\nDeneyim: ${experience}`;
-      copyToClipboard(text);
-      alert('Başvuru metni kopyalandı. Discord veya mail ile bize göndererek başvurunu tamamlayabilirsin.');
-    });
-
-    document.getElementById('cancelApply').addEventListener('click', ()=>{ document.getElementById('whitelistForm').reset(); });
-
-    function copyToClipboard(text){
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(text).catch(()=>{ fallbackCopy(text); });
-      } else { fallbackCopy(text); }
+        const enabled = localStorage.getItem(SOUND_KEY) === 'true';
+        if(!enabled) return;
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = 900; // start
+        g.gain.value = 0.0001;
+        o.connect(g); g.connect(ctx.destination);
+        const now = ctx.currentTime;
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(0.05, now + 0.02);
+        o.frequency.exponentialRampToValueAtTime(1200, now + 0.06);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+        o.start(now);
+        o.stop(now + 0.19);
+      }catch(e){ console.warn('Audio play failed', e); }
     }
-    function fallbackCopy(text){ const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy')}catch(e){} ta.remove(); }
 
-    // === Admin: fetch open whitelist issues (read-only) ===
+    // Accordion behaviour (animated + sound)
+    document.querySelectorAll('.accordion-item').forEach(item=>{
+      const head = item.querySelector('.acc-head');
+      const body = item.querySelector('.acc-body');
+      // ensure collapsed state
+      body.style.maxHeight = '0px';
+      head.addEventListener('click', ()=>{
+        const isOpen = item.classList.contains('open');
+        // close others
+        document.querySelectorAll('.accordion-item.open').forEach(openItem=>{
+          if(openItem === item) return;
+          openItem.classList.remove('open');
+          const b = openItem.querySelector('.acc-body');
+          if(b){ b.style.maxHeight = '0px'; }
+        });
+        if(isOpen){
+          // close this
+          item.classList.remove('open');
+          body.style.maxHeight = '0px';
+        } else {
+          // open
+          item.classList.add('open');
+          // set height to content to animate
+          body.style.maxHeight = body.scrollHeight + 'px';
+          // play sound
+          playOpenSound();
+        }
+      });
+    });
+
+    // Navbar smooth highlighting + ensure anchors open sections and rule first opens
+    document.querySelectorAll('.nav-link').forEach(a=>{
+      a.addEventListener('click',(e)=>{
+        document.querySelectorAll('.nav-link').forEach(x=>x.classList.remove('active'));
+        a.classList.add('active');
+        const href = a.getAttribute('href');
+        if(href && href.startsWith('#')){
+          const target = document.querySelector(href);
+          if(target){
+            target.scrollIntoView({behavior:'smooth'});
+            if(href === '#rules'){
+              // open first accordion item
+              const first = document.querySelector('#rules .accordion-item');
+              if(first){
+                // close others
+                document.querySelectorAll('.accordion-item.open').forEach(openItem=>{
+                  openItem.classList.remove('open');
+                  const b = openItem.querySelector('.acc-body'); if(b) b.style.maxHeight = '0px';
+                });
+                first.classList.add('open');
+                const b = first.querySelector('.acc-body'); if(b) b.style.maxHeight = b.scrollHeight + 'px';
+                // play sound
+                playOpenSound();
+              }
+            }
+          }
+        }
+      });
+    });
+
+    // Check auth status on load
+    async function checkAuth(){
+      try{
+        const res = await fetch('/.netlify/functions/me');
+        if(res.ok){
+          const data = await res.json();
+          if(data && data.user){
+            // authenticated
+            adminSection.style.display='block';
+            loginBtn.style.display='none';
+            logoutBtn.style.display='inline-flex';
+            await fetchAdminIssues();
+            return;
+          }
+        }
+      }catch(e){console.error(e)}
+      // not authenticated
+      adminSection.style.display='none';
+      loginBtn.style.display='inline-flex';
+      logoutBtn.style.display='none';
+    }
+
+    logoutBtn.addEventListener('click', ()=>{ window.location.href = '/.netlify/functions/logout'; });
+
+    refreshAdminBtn.addEventListener('click', ()=>{ fetchAdminIssues(); });
+    openIssuesAdmin.addEventListener('click', ()=>{ window.open('https://github.com/AyazCute1655/Sunucuk/issues','_blank'); });
+
     async function fetchAdminIssues(){
-      if(!isAdminAuthed){ alert('Önce şifre ile giriş yapmalısın.'); return; }
       adminList.innerHTML = 'Yükleniyor...';
       try{
-        const url = 'https://api.github.com/repos/AyazCute1655/Sunucuk/issues?labels=whitelist&state=open&per_page=100';
-        const res = await fetch(url, { headers: { Accept: 'application/vnd.github.v3+json' } });
+        const url = '/.netlify/functions/fetch_issues';
+        const res = await fetch(url);
         if(!res.ok) throw new Error('GitHub API hatası: ' + res.status);
         const issues = await res.json();
         if(!Array.isArray(issues) || issues.length === 0){ adminList.innerHTML = '<div style="color:var(--muted)">Açık whitelist başvurusu yok.</div>'; return; }
-
         adminList.innerHTML = '';
         issues.forEach(issue =>{
           const div = document.createElement('div'); div.className = 'admin-item';
@@ -459,75 +465,63 @@
       }
     }
 
-    // === Existing server status code ===
-    const el = {
-      status: document.getElementById('status'),
-      versionText: document.getElementById('versionText'),
-      players: document.getElementById('players'),
-      motdText: document.getElementById('motdText'),
-      playerList: document.getElementById('playerList'),
-      playersWrap: document.getElementById('playersWrap'),
-      srvInfo: document.getElementById('srvInfo'),
-      joinBtn: document.getElementById('joinBtn'),
-      copyBtn: document.getElementById('copyBtn'),
-      discordBtn: document.getElementById('discordBtn'),
-      sideStatus: document.getElementById('sideStatus'),
-      sidePlayers: document.getElementById('sidePlayers'),
-      sideJoin: document.getElementById('sideJoin')
-    };
+    // === Apply form (FormSubmit) ===
+    document.getElementById('whitelistForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const f = e.target;
+      const mcname = f.mcname.value.trim();
+      const reason = f.reason.value.trim();
+      const experience = f.experience.value.trim();
+      if(!mcname || !reason) { alert('Lütfen gerekli alanları doldurun.'); return; }
 
-    el.joinBtn.href = `minecraft://${SERVER}`;
-    el.sideJoin.href = `minecraft://${SERVER}`;
-    document.getElementById('srvInfo').textContent = SERVER;
+      const fd = new FormData();
+      fd.append('mcname', mcname);
+      fd.append('reason', reason);
+      fd.append('experience', experience);
+      fd.append('_subject', `Whitelist Başvurusu: ${mcname}`);
+      fd.append('_captcha', 'false');
 
-    el.copyBtn.addEventListener('click', async () => {
       try{
-        await navigator.clipboard.writeText(SERVER);
-        el.copyBtn.textContent = 'Kopyalandı ✓';
-        setTimeout(()=> el.copyBtn.textContent = "IP'yi Kopyala",1500);
-      }catch(e){alert('Kopyalama başarısız: '+e)}
-    });
-
-    document.getElementById('copyTemplateBtn').addEventListener('click', async ()=>{
-      const template = `Kullanıcı adı:\nNeden sunucuya katılmak istiyorsun?:\nDeneyimin (kısa):\nDil/Yaş (isteğe bağlı):`;
-      try{await navigator.clipboard.writeText(template);alert('Başvuru şablonu kopyalandı. Yeni issue açıp yapıştırabilirsin.');}catch(e){alert('Kopyalama hatası: '+e)}
-    });
-
-    document.querySelectorAll('.acc-head').forEach(h=>{h.addEventListener('click', ()=>{const body = h.nextElementSibling;const open = body.style.display === 'block';document.querySelectorAll('.acc-body').forEach(b=>b.style.display='none');if(!open) body.style.display='block';});});
-    document.querySelectorAll('.nav-link').forEach(a=>{a.addEventListener('click',(e)=>{document.querySelectorAll('.nav-link').forEach(x=>x.classList.remove('active'));a.classList.add('active');});});
-
-    async function fetchServer(){
-      try{
-        const res = await fetch(API);
-        if(!res.ok) throw new Error(res.status);
+        const endpoint = 'https://formsubmit.co/ajax/ayazberkalsan1@gmail.com';
+        const res = await fetch(endpoint, { method: 'POST', body: fd });
         const data = await res.json();
-        if(data.online){
-          el.status.textContent = 'Çevrimiçi'; el.status.style.color = 'var(--accent)';
-          const online = data.players && typeof data.players.online === 'number' ? data.players.online : '--';
-          const max = data.players && typeof data.players.max === 'number' ? data.players.max : '--';
-          el.players.textContent = `${online} / ${max}`;
-          document.getElementById('sideStatus').textContent = 'Çevrimiçi';
-          document.getElementById('sidePlayers').textContent = `${online} / ${max}`;
-
-          if(data.motd && data.motd.clean) document.getElementById('motdText').textContent = data.motd.clean.join(' ');
-          if(data.version) document.getElementById('versionText').textContent = `Versiyon: ${data.version}`;
-
-          if(data.players && Array.isArray(data.players.list) && data.players.list.length){
-            el.playerList.innerHTML=''; data.players.list.forEach(p=>{const li=document.createElement('li');li.textContent=p;el.playerList.appendChild(li)});
-            el.playersWrap.style.display='block';
-          } else el.playersWrap.style.display='none';
+        if(res.ok){
+          alert('Başvurunuz gönderildi — kontrol için e-postayı kontrol edeceğiz. (FormSubmit ilk kullanımda e-posta doğrulaması isteyebilir.)');
+          f.reset();
         } else {
-          el.status.textContent='Çevrimdışı'; el.status.style.color='var(--danger)';
-          el.players.textContent='-- / --'; document.getElementById('sideStatus').textContent='Çevrimdışı'; document.getElementById('sidePlayers').textContent='-- / --';
-          el.playersWrap.style.display='none';
+          throw new Error(data.message || 'Form gönderimi başarısız');
         }
       }catch(err){
-        console.error(err); el.status.textContent='Hata'; el.status.style.color='var(--danger)';
+        console.error(err);
+        const text = `Whitelist Başvurusu\n\nKullanıcı adı: ${mcname}\n\nNeden katılmak istiyorsun?: ${reason}\n\nDeneyim: ${experience}`;
+        copyToClipboard(text);
+        alert('Sunucuya gönderilemedi. Başvuru metni panoya kopyalandı; lütfen Discord veya e-posta ile gönderin.');
       }
-    }
+    });
+
+    document.getElementById('noGithubBtn').addEventListener('click', ()=>{
+      const f = document.getElementById('whitelistForm');
+      const mcname = f.mcname.value.trim() || '[Kullanıcı adı]';
+      const reason = f.reason.value.trim() || '[Neden]';
+      const experience = f.experience.value.trim() || '[Deneyim]';
+      const text = `Whitelist Başvurusu\n\nKullanıcı adı: ${mcname}\n\nNeden katılmak istiyorsun?: ${reason}\n\nDeneyim: ${experience}`;
+      copyToClipboard(text);
+      alert('Başvuru metni kopyalandı. Discord veya mail ile bize göndererek başvurunu tamamlayabilirsin.');
+    });
+
+    function copyToClipboard(text){ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).catch(()=>{ fallbackCopy(text); }); } else { fallbackCopy(text); } }
+    function fallbackCopy(text){ const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy')}catch(e){} ta.remove(); }
+
+    // === Server status code (unchanged) ===
+    const el = { status: document.getElementById('status'), versionText: document.getElementById('versionText'), players: document.getElementById('players'), motdText: document.getElementById('motdText'), playerList: document.getElementById('playerList'), playersWrap: document.getElementById('playersWrap'), srvInfo: document.getElementById('srvInfo'), joinBtn: document.getElementById('joinBtn'), copyBtn: document.getElementById('copyBtn'), discordBtn: document.getElementById('discordBtn'), sideStatus: document.getElementById('sideStatus'), sidePlayers: document.getElementById('sidePlayers'), sideJoin: document.getElementById('sideJoin') };
+    el.joinBtn.href = `minecraft://${SERVER}`; el.sideJoin.href = `minecraft://${SERVER}`; document.getElementById('srvInfo').textContent = SERVER;
+    el.copyBtn.addEventListener('click', async () => { try{ await navigator.clipboard.writeText(SERVER); el.copyBtn.textContent = 'Kopyalandı ✓'; setTimeout(()=> el.copyBtn.textContent = "IP'yi Kopyala",1500); }catch(e){alert('Kopyalama başarısız: '+e)} });
+
+    async function fetchServer(){ try{ const res = await fetch(API); if(!res.ok) throw new Error(res.status); const data = await res.json(); if(data.online){ el.status.textContent = 'Çevrimiçi'; el.status.style.color = 'var(--accent)'; const online = data.players && typeof data.players.online === 'number' ? data.players.online : '--'; const max = data.players && typeof data.players.max === 'number' ? data.players.max : '--'; el.players.textContent = `${online} / ${max}`; document.getElementById('sideStatus').textContent = 'Çevrimiçi'; document.getElementById('sidePlayers').textContent = `${online} / ${max}`; if(data.motd && data.motd.clean) document.getElementById('motdText').textContent = data.motd.clean.join(' '); if(data.version) document.getElementById('versionText').textContent = `Versiyon: ${data.version}`; if(data.players && Array.isArray(data.players.list) && data.players.list.length){ el.playerList.innerHTML=''; data.players.list.forEach(p=>{const li=document.createElement('li');li.textContent=p;el.playerList.appendChild(li)}); el.playersWrap.style.display='block'; } else el.playersWrap.style.display='none'; } else { el.status.textContent='Çevrimdışı'; el.status.style.color='var(--danger)'; el.players.textContent='-- / --'; document.getElementById('sideStatus').textContent='Çevrimdışı'; document.getElementById('sidePlayers').textContent='-- / --'; el.playersWrap.style.display='none'; } }catch(err){ console.error(err); el.status.textContent='Hata'; el.status.style.color='var(--danger)'; } }
     fetchServer(); setInterval(fetchServer,30000);
 
-    // Security note: Admin password is obfuscated in parts to make casual source-reading harder but is still client-side. For real protection use server-side auth (Netlify Identity / Cloudflare Access / custom backend).
+    // run auth check on load
+    checkAuth();
   </script>
 </body>
 </html>
