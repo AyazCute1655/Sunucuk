@@ -195,10 +195,10 @@
             <p>Kısa açıklama: BoxPvP tarzı hızlı maçlar, adil eşleşme ve eğlenceli komutlar.</p>
           </section>
 
-          <!-- APPLY (public form) -->
+          <!-- APPLY (public form -> sends to Gmail via FormSubmit) -->
           <section id="apply" class="panel">
             <h2>Başvuru / Whitelist</h2>
-            <p>Şimdi başvurular herkes için açık. Aşağıdaki formu doldurup gönderdiğinde GitHub Issues için ön-doldurulmuş bir issue sayfası açılır. Eğer GitHub hesabın yoksa "GitHub Olmadan Gönder" butonunu kullan.</p>
+            <p>Başvurular doğrudan e-posta ile adminin Gmail adresine gönderilecektir. (Kullanıcıların GitHub hesabı gerekmeyecek.)</p>
 
             <div id="applyForm" style="display:block;margin-top:12px">
               <form id="whitelistForm">
@@ -215,11 +215,11 @@
                   <input name="experience" />
                 </div>
                 <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-                  <button class="btn primary" type="submit">Başvuruyu Oluştur (GitHub ile)</button>
-                  <button class="btn" type="button" id="noGithubBtn">GitHub Olmadan Gönder (Kopyala)</button>
+                  <button class="btn primary" type="submit">Başvuruyu Gönder</button>
+                  <button class="btn" type="button" id="noGithubBtn">GitHub Olmadan Kopyala</button>
                   <button class="btn" type="button" id="cancelApply">Temizle</button>
                 </div>
-                <p style="font-size:13px;color:var(--muted);margin-top:8px">Not: GitHub ile gönderim yapanlar otomatik issue açabilir. Diğerleri form metnini kopyalayıp Discord veya yetkiliye iletebilir.</p>
+                <p style="font-size:13px;color:var(--muted);margin-top:8px">Not: Formun e-postaya gitmesi için ilk gönderimde FormSubmit tarafından admin e-posta doğrulaması gerekebilir; lütfen gelen e-postayı onayla.</p>
               </form>
             </div>
 
@@ -307,15 +307,15 @@
     const API = `https://api.mcsrvstat.us/2/${encodeURIComponent(SERVER)}`;
 
     // === PASSWORD PROTECTION (client-side for admin only) ===
-    // Kullanıcının verdiği şifre (senin belirttiğin):
-    const ACCESS_PASSWORD = '12345678901234567890*1234567890*-';
+    // Obfuscated password parts (joined at runtime) to make quick source-reading harder
+    const PASS_PARTS = ['q1w2e3r4t5yy6u7', 'ı8o9p0ğ*', 'ü-'];
+    const ACCESS_PASSWORD = PASS_PARTS.join('');
 
     // State whether authenticated for admin
     let isAdminAuthed = false;
 
     const applyNav = document.getElementById('applyNav');
     const adminNav = document.getElementById('adminNav');
-    const enterPwdBtn = document.getElementById('enterPwdBtn');
     const pwdOverlay = document.getElementById('pwdOverlay');
     const pwdInput = document.getElementById('pwdInput');
     const pwdSubmit = document.getElementById('pwdSubmit');
@@ -328,10 +328,10 @@
     const openIssuesAdmin = document.getElementById('openIssuesAdmin');
     const noGithubBtn = document.getElementById('noGithubBtn');
 
-    // Make apply publicly accessible (users can now submit without password)
+    // Make apply publicly accessible (users can now submit without GitHub)
     applyFormWrap.style.display = 'block';
 
-    // Apply nav should scroll to form (no password)
+    // Apply nav should scroll to form
     applyNav.addEventListener('click', (e)=>{ e.preventDefault(); document.getElementById('apply').scrollIntoView({behavior:'smooth'}); });
 
     // Admin nav opens password modal
@@ -362,15 +362,12 @@
       }
     });
 
-    // View issues (submissions) -- opens repo issues page
-    if(viewIssuesBtn) viewIssuesBtn.addEventListener('click', ()=>{ window.open('https://github.com/AyazCute1655/Sunucuk/issues','_blank'); });
-
     // Admin buttons
     if(refreshAdminBtn) refreshAdminBtn.addEventListener('click', ()=>{ fetchAdminIssues(); });
     if(openIssuesAdmin) openIssuesAdmin.addEventListener('click', ()=>{ window.open('https://github.com/AyazCute1655/Sunucuk/issues','_blank'); });
 
-    // === FORM SUBMISSION: open prefilled GitHub issue ===
-    document.getElementById('whitelistForm').addEventListener('submit', (e)=>{
+    // === FORM SUBMISSION: send to FormSubmit (email) via AJAX --> sends to ayazberkalsan1@gmail.com
+    document.getElementById('whitelistForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
       const f = e.target;
       const mcname = f.mcname.value.trim();
@@ -378,17 +375,32 @@
       const experience = f.experience.value.trim();
       if(!mcname || !reason) { alert('Lütfen gerekli alanları doldurun.'); return; }
 
-      const title = encodeURIComponent(`Whitelist Başvurusu: ${mcname}`);
-      const bodyText = `Kullanıcı adı: ${mcname}%0A%0ANeden katılmak istiyorsun?: ${encodeURIComponent(reason)}%0A%0ADeneyim: ${encodeURIComponent(experience)}%0A%0AGönderildi: ${new Date().toLocaleString()}`;
-      const labels = encodeURIComponent('whitelist');
-      const issuesUrl = `https://github.com/AyazCute1655/Sunucuk/issues/new?title=${title}&body=${bodyText}&labels=${labels}`;
+      // Prepare form data for FormSubmit AJAX endpoint
+      const fd = new FormData();
+      fd.append('mcname', mcname);
+      fd.append('reason', reason);
+      fd.append('experience', experience);
+      fd.append('_subject', `Whitelist Başvurusu: ${mcname}`);
+      fd.append('_captcha', 'false');
+      // optional _next parameter to redirect after submit
+      // fd.append('_next', window.location.href + '?submitted=1');
 
-      // Try to open GitHub issue prefill in new tab
-      const opened = window.open(issuesUrl, '_blank');
-      if(!opened){
-        // popup blocked — fallback to copying body
-        copyToClipboard(decodeURIComponent(bodyText.replace(/%0A/g,'\n')));
-        alert('Yeni sekme açılamadı (popup blocked). Başvuru metni panoya kopyalandı — GitHub Issues sayfasına gidip yeni issue oluşturup yapıştırabilirsin.');
+      try{
+        const endpoint = 'https://formsubmit.co/ajax/ayazberkalsan1@gmail.com';
+        const res = await fetch(endpoint, { method: 'POST', body: fd });
+        const data = await res.json();
+        if(res.ok){
+          alert('Başvurunuz gönderildi — kontrol için e-postayı kontrol edeceğiz. (FormSubmit ilk kullanımda e-posta doğrulaması isteyebilir.)');
+          f.reset();
+        } else {
+          throw new Error(data.message || 'Form gönderimi başarısız');
+        }
+      }catch(err){
+        console.error(err);
+        // fallback: copy to clipboard
+        const text = `Whitelist Başvurusu\n\nKullanıcı adı: ${mcname}\n\nNeden katılmak istiyorsun?: ${reason}\n\nDeneyim: ${experience}`;
+        copyToClipboard(text);
+        alert('Sunucuya gönderilemedi. Başvuru metni panoya kopyalandı; lütfen Discord veya e-posta ile gönderin.');
       }
     });
 
@@ -407,21 +419,16 @@
 
     function copyToClipboard(text){
       if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(text).catch(()=>{
-          // fallback
-          const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy')}catch(e){} ta.remove();
-        });
-      } else {
-        const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy')}catch(e){} ta.remove();
-      }
+        navigator.clipboard.writeText(text).catch(()=>{ fallbackCopy(text); });
+      } else { fallbackCopy(text); }
     }
+    function fallbackCopy(text){ const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy')}catch(e){} ta.remove(); }
 
     // === Admin: fetch open whitelist issues (read-only) ===
     async function fetchAdminIssues(){
       if(!isAdminAuthed){ alert('Önce şifre ile giriş yapmalısın.'); return; }
       adminList.innerHTML = 'Yükleniyor...';
       try{
-        // public repo read: unauthenticated requests OK but rate-limited
         const url = 'https://api.github.com/repos/AyazCute1655/Sunucuk/issues?labels=whitelist&state=open&per_page=100';
         const res = await fetch(url, { headers: { Accept: 'application/vnd.github.v3+json' } });
         if(!res.ok) throw new Error('GitHub API hatası: ' + res.status);
@@ -520,7 +527,7 @@
     }
     fetchServer(); setInterval(fetchServer,30000);
 
-    // Security note: This password protection for admin is client-side only (password present in JS). For real security, use a server-side solution or a service that supports password-protected pages (Netlify + basic auth, Cloudflare Worker, or GitHub Pages behind proxy).
+    // Security note: Admin password is obfuscated in parts to make casual source-reading harder but is still client-side. For real protection use server-side auth (Netlify Identity / Cloudflare Access / custom backend).
   </script>
 </body>
 </html>
