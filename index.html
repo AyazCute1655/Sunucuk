@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BOxPvP Kral ları - Minecraft Sunucu</title>
+  <style>
+    :root{--bg:#0b1020;--card:#0f1724;--accent:#28a745;--muted:#98a0b3;--glass:rgba(255,255,255,0.04)}
+    *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    body{margin:0;min-height:100vh;background:linear-gradient(180deg,#041223 0%, #071126 100%);color:#e6eef8;display:flex;align-items:center;justify-content:center;padding:24px}
+    .container{width:100%;max-width:920px}
+    .card{background:var(--card);border-radius:12px;padding:24px;box-shadow:0 8px 30px rgba(2,6,23,0.6);backdrop-filter:blur(6px)}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:12px}
+    .logo{width:64px;height:64px;border-radius:8px;background:linear-gradient(135deg,#4f46e5,#06b6d4);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:4px 0 0;color:var(--muted)}
+    .status{display:flex;gap:16px;margin-top:18px;flex-wrap:wrap}
+    .stat{background:var(--glass);padding:14px;border-radius:10px;min-width:160px;flex:1}
+    .stat h3{margin:0;font-size:13px;color:var(--muted)}
+    .stat .value{font-size:20px;font-weight:600;margin-top:6px}
+    .players{margin-top:16px}
+    .players ul{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-wrap:wrap;gap:8px}
+    .players li{background:#0b1220;padding:6px 10px;border-radius:999px;font-size:13px;color:#cfe8d8}
+    .actions{display:flex;gap:8px;margin-top:18px}
+    .btn{background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03);padding:10px 14px;border-radius:8px;color:inherit;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+    .btn.primary{background:linear-gradient(180deg,var(--accent),#1e7b3a);color:white;border:none}
+    .small{font-size:13px;color:var(--muted);margin-top:10px}
+    footer{margin-top:16px;color:var(--muted);font-size:13px;text-align:center}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card" id="card">
+      <header>
+        <div class="logo" id="logo">MC</div>
+        <div>
+          <h1 id="serverName">BOXPVPKRALLARI</h1>
+          <p class="lead" id="serverIp">IP: <span id="ipText">boxpvpkrallari.aternos.me</span></p>
+        </div>
+      </header>
+
+      <div class="status">
+        <div class="stat">
+          <h3>Durum</h3>
+          <div class="value" id="status">Yükleniyor...</div>
+          <div class="small" id="versionText"></div>
+        </div>
+
+        <div class="stat">
+          <h3>Oyuncular</h3>
+          <div class="value" id="players">-- / --</div>
+          <div class="small" id="motdText"></div>
+        </div>
+
+        <div class="stat">
+          <h3>Sunucu Bilgisi</h3>
+          <div class="value" id="srvInfo">-</div>
+          <div class="small">Otomatik güncellenir</div>
+        </div>
+      </div>
+
+      <div class="players" id="playersWrap" style="display:none">
+        <strong>Çevrimiçi Oyuncular:</strong>
+        <ul id="playerList"></ul>
+      </div>
+
+      <div class="actions">
+        <a class="btn primary" id="joinBtn" href="#" target="_self">Sunucuya Katıl</a>
+        <button class="btn" id="copyBtn">IP'yi Kopyala</button>
+        <a class="btn" id="discordBtn" href="#" target="_blank">Discord</a>
+      </div>
+
+      <p class="small">Not: Eğer oyuncu listesi boş görünüyorsa, sunucu gizliliği veya API limitleri nedeniyle veri gelmeyebilir.</p>
+
+      <footer>Site hazır — daha fazla özellik istersen (oylama, bağış, web paneli) söyle yeter.</footer>
+    </div>
+  </div>
+
+  <script>
+    // Güncellenen sunucu adresi:
+    const SERVER = 'boxpvpkrallari.aternos.me';
+
+    // API: https://api.mcsrvstat.us/2/<server>
+    const API = `https://api.mcsrvstat.us/2/${encodeURIComponent(SERVER)}`;
+
+    const el = {
+      status: document.getElementById('status'),
+      versionText: document.getElementById('versionText'),
+      players: document.getElementById('players'),
+      motdText: document.getElementById('motdText'),
+      playerList: document.getElementById('playerList'),
+      playersWrap: document.getElementById('playersWrap'),
+      serverName: document.getElementById('serverName'),
+      ipText: document.getElementById('ipText'),
+      joinBtn: document.getElementById('joinBtn'),
+      copyBtn: document.getElementById('copyBtn'),
+      discordBtn: document.getElementById('discordBtn'),
+    };
+
+    // Başlangıç değerleri
+    el.ipText.textContent = SERVER;
+    el.serverName.textContent = SERVER.split('.')[0].toUpperCase();
+
+    // Join buton: tarayıcı tarafından destekleniyorsa minecraft protokolünü açar (Java için).
+    el.joinBtn.href = `minecraft://${SERVER}`;
+
+    // Kopyala işlemi
+    el.copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(SERVER);
+        el.copyBtn.textContent = 'Kopyalandı ✓';
+        setTimeout(()=> el.copyBtn.textContent = "IP'yi Kopyala", 1500);
+      } catch(e){
+        alert('Kopyalama başarısız: ' + e);
+      }
+    });
+
+    // Discord butonu: istersen buraya sunucu Discord invite linkini ekleyebilirsin
+    el.discordBtn.href = '#';
+
+    // Sunucu bilgisini çek ve DOM'u güncelle
+    async function fetchServer() {
+      el.status.textContent = 'Yükleniyor...';
+      try {
+        const res = await fetch(API);
+        if (!res.ok) throw new Error('API hatası: ' + res.status);
+        const data = await res.json();
+
+        if (data.online) {
+          el.status.textContent = 'Çevrimiçi';
+          el.status.style.color = 'var(--accent)';
+          const online = data.players && typeof data.players.online === 'number' ? data.players.online : '--';
+          const max = data.players && typeof data.players.max === 'number' ? data.players.max : '--';
+          el.players.textContent = `${online} / ${max}`;
+
+          // MOTD
+          if (data.motd && data.motd.clean && data.motd.clean.length) {
+            el.motdText.textContent = data.motd.clean.join(' ');
+          } else {
+            el.motdText.textContent = '';
+          }
+
+          // Version
+          if (data.version) {
+            el.versionText.textContent = `Versiyon: ${data.version}`;
+          } else {
+            el.versionText.textContent = '';
+          }
+
+          // Server info (adres/port/protocol)
+          const ipPort = data.ip ? data.ip + (data.port ? ':' + data.port : '') : SERVER;
+          el.srvInfo = document.getElementById('srvInfo');
+          if (el.srvInfo) el.srvInfo.textContent = ipPort;
+
+          // Oyuncu listesi
+          if (data.players && Array.isArray(data.players.list) && data.players.list.length) {
+            el.playerList.innerHTML = '';
+            data.players.list.forEach(p => {
+              const li = document.createElement('li');
+              li.textContent = p;
+              el.playerList.appendChild(li);
+            });
+            el.playersWrap.style.display = 'block';
+          } else {
+            el.playersWrap.style.display = 'none';
+          }
+        } else {
+          el.status.textContent = 'Çevrimdışı';
+          el.status.style.color = '#d65858';
+          el.players.textContent = '-- / --';
+          el.motdText.textContent = '';
+          el.playersWrap.style.display = 'none';
+        }
+      } catch (err) {
+        el.status.textContent = 'Hata';
+        el.status.style.color = '#d65858';
+        el.players.textContent = '-- / --';
+        el.motdText.textContent = '';
+        el.playersWrap.style.display = 'none';
+        console.error('Sunucu bilgisi alınamadı:', err);
+      }
+    }
+
+    // İlk yükleme ve arkaplanda periyodik yenileme
+    fetchServer();
+    setInterval(fetchServer, 30_000); // her 30 saniyede bir güncelle
+  </script>
+</body>
+</html>
