@@ -76,6 +76,11 @@
     .pwd-box{background:var(--card);padding:18px;border-radius:10px;width:90%;max-width:420px}
     .pwd-box input{width:100%;padding:10px;font-size:16px}
 
+    /* Admin list */
+    .admin-list{display:flex;flex-direction:column;gap:10px}
+    .admin-item{background:rgba(0,0,0,0.04);padding:10px;border-radius:8px}
+    .meta{font-size:12px;color:var(--muted);margin-top:6px}
+
     /* Responsive */
     @media (max-width:880px){
       .grid{grid-template-columns:1fr;}
@@ -110,6 +115,7 @@
           <a href="#apply" class="nav-link" id="applyNav">Başvuru</a>
           <a href="#staff" class="nav-link">Yetkililer</a>
           <a href="#faq" class="nav-link">SSS</a>
+          <a href="#admin" class="nav-link" id="adminNav">Başvuru Kontrol</a>
         </div>
       </nav>
 
@@ -189,16 +195,12 @@
             <p>Kısa açıklama: BoxPvP tarzı hızlı maçlar, adil eşleşme ve eğlenceli komutlar.</p>
           </section>
 
-          <!-- APPLY (password-protected inline form) -->
+          <!-- APPLY (public form) -->
           <section id="apply" class="panel">
-            <h2>Başvuru / Whitelist (Şifreli Erişim)</h2>
-            <p>Bu bölüm şifre korumalıdır. Yetkiliysen şifreyi girerek başvuru formunu doldurabilirsin.</p>
-            <div id="applyLocked">
-              <button class="btn primary" id="enterPwdBtn">Giriş Yap (Şifre)</button>
-              <button class="btn" id="viewIssuesBtn">Başvuruları Gör (Issues)</button>
-            </div>
+            <h2>Başvuru / Whitelist</h2>
+            <p>Şimdi başvurular herkes için açık. Aşağıdaki formu doldurup gönderdiğinde GitHub Issues için ön-doldurulmuş bir issue sayfası açılır. Eğer GitHub hesabın yoksa "GitHub Olmadan Gönder" butonunu kullan.</p>
 
-            <div id="applyForm" style="display:none;margin-top:12px">
+            <div id="applyForm" style="display:block;margin-top:12px">
               <form id="whitelistForm">
                 <div class="form-row">
                   <label>Minecraft Kullanıcı Adı</label>
@@ -212,11 +214,12 @@
                   <label>Deneyimin (kısa)</label>
                   <input name="experience" />
                 </div>
-                <div style="display:flex;gap:8px;margin-top:8px">
-                  <button class="btn primary" type="submit">Başvuruyu Oluştur</button>
-                  <button class="btn" type="button" id="cancelApply">İptal</button>
+                <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+                  <button class="btn primary" type="submit">Başvuruyu Oluştur (GitHub ile)</button>
+                  <button class="btn" type="button" id="noGithubBtn">GitHub Olmadan Gönder (Kopyala)</button>
+                  <button class="btn" type="button" id="cancelApply">Temizle</button>
                 </div>
-                <p style="font-size:13px;color:var(--muted);margin-top:8px">Not: Başvuru gönderildiğinde GitHub Issues üzerinde yeni bir issue olarak açılacaktır; kullanıcıların GitHub hesabı ile oturum açması gerekebilir.</p>
+                <p style="font-size:13px;color:var(--muted);margin-top:8px">Not: GitHub ile gönderim yapanlar otomatik issue açabilir. Diğerleri form metnini kopyalayıp Discord veya yetkiliye iletebilir.</p>
               </form>
             </div>
 
@@ -229,6 +232,20 @@
               <div class="staff-item"><div class="avatar">A</div><div><strong>Ayaz</strong><div style="font-size:12px;color:var(--muted)">Sahip / Admin</div></div></div>
               <div class="staff-item"><div class="avatar">B</div><div><strong>Berke</strong><div style="font-size:12px;color:var(--muted)">Yetkili</div></div></div>
             </div>
+          </section>
+
+          <!-- ADMIN: Başvuru Kontrol (password-protected, read-only) -->
+          <section id="admin" class="panel" style="display:none">
+            <h2>Başvuru Kontrol (Admin)</h2>
+            <p>Bu panel sadece yetkililer içindir. Şifreyi girdikten sonra açık "whitelist" etiketli issue'ları burada görebilirsin.</p>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn primary" id="refreshAdmin">Yenile</button>
+              <button class="btn" id="openIssuesAdmin">Issues Sayfasını Aç</button>
+            </div>
+            <div id="adminList" style="margin-top:12px" class="admin-list">
+              <!-- Issues will be loaded here -->
+            </div>
+            <p style="font-size:12px;color:var(--muted);margin-top:10px">Not: Bu liste GitHub API ile çekilir. Repo public olduğu için sadece okunabilir; rate limit uygulanabilir.</p>
           </section>
 
           <!-- FAQ -->
@@ -274,7 +291,7 @@
   <!-- Password modal (hidden by default) -->
   <div id="pwdOverlay" class="overlay" style="display:none">
     <div class="pwd-box">
-      <h3>Şifre ile Giriş</h3>
+      <h3>Şifre ile Giriş (Sadece Admin için)</h3>
       <p style="font-size:13px;color:var(--muted)">Lütfen şifreyi girin. (Bu yöntem client-side'dır — gerçek koruma için sunucu tarafı önerilir.)</p>
       <input id="pwdInput" type="password" placeholder="Şifre" />
       <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
@@ -289,48 +306,68 @@
     const SERVER = 'boxpvpkrallari.aternos.me';
     const API = `https://api.mcsrvstat.us/2/${encodeURIComponent(SERVER)}`;
 
-    // === PASSWORD PROTECTION (client-side) ===
+    // === PASSWORD PROTECTION (client-side for admin only) ===
     // Kullanıcının verdiği şifre (senin belirttiğin):
     const ACCESS_PASSWORD = '12345678901234567890*1234567890*-';
 
+    // State whether authenticated for admin
+    let isAdminAuthed = false;
+
     const applyNav = document.getElementById('applyNav');
+    const adminNav = document.getElementById('adminNav');
     const enterPwdBtn = document.getElementById('enterPwdBtn');
     const pwdOverlay = document.getElementById('pwdOverlay');
     const pwdInput = document.getElementById('pwdInput');
     const pwdSubmit = document.getElementById('pwdSubmit');
     const pwdCancel = document.getElementById('pwdCancel');
     const applyFormWrap = document.getElementById('applyForm');
-    const applyLocked = document.getElementById('applyLocked');
     const viewIssuesBtn = document.getElementById('viewIssuesBtn');
+    const adminSection = document.getElementById('admin');
+    const adminList = document.getElementById('adminList');
+    const refreshAdminBtn = document.getElementById('refreshAdmin');
+    const openIssuesAdmin = document.getElementById('openIssuesAdmin');
+    const noGithubBtn = document.getElementById('noGithubBtn');
 
-    // Open overlay when clicking nav or button
-    applyNav.addEventListener('click', (e)=>{
-      e.preventDefault();
-      pwdOverlay.style.display='flex';
-      pwdInput.value='';
+    // Make apply publicly accessible (users can now submit without password)
+    applyFormWrap.style.display = 'block';
+
+    // Apply nav should scroll to form (no password)
+    applyNav.addEventListener('click', (e)=>{ e.preventDefault(); document.getElementById('apply').scrollIntoView({behavior:'smooth'}); });
+
+    // Admin nav opens password modal
+    adminNav.addEventListener('click', (e)=>{ e.preventDefault(); promptPassword('admin'); });
+
+    function promptPassword(target){
+      pwdOverlay.style.display = 'flex';
+      pwdInput.value = '';
       pwdInput.focus();
-    });
-    enterPwdBtn.addEventListener('click', ()=>{pwdOverlay.style.display='flex'; pwdInput.value=''; pwdInput.focus();});
-    pwdCancel.addEventListener('click', ()=>{pwdOverlay.style.display='none';});
+      pwdOverlay.dataset.target = target;
+    }
 
-    pwdSubmit.addEventListener('click', ()=>{
+    pwdCancel.addEventListener('click', ()=>{ pwdOverlay.style.display='none'; });
+
+    pwdSubmit.addEventListener('click', async ()=>{
       const v = pwdInput.value || '';
       if(v === ACCESS_PASSWORD){
-        // Show form
+        const target = pwdOverlay.dataset.target;
         pwdOverlay.style.display='none';
-        applyFormWrap.style.display='block';
-        applyLocked.style.display='none';
-        // Scroll to apply form
-        document.getElementById('apply').scrollIntoView({behavior:'smooth'});
+        isAdminAuthed = true;
+        if(target === 'admin'){
+          adminSection.style.display='block';
+          document.getElementById('admin').scrollIntoView({behavior:'smooth'});
+          await fetchAdminIssues();
+        }
       } else {
         alert('Şifre yanlış. Tekrar deneyin.');
       }
     });
 
     // View issues (submissions) -- opens repo issues page
-    viewIssuesBtn.addEventListener('click', ()=>{
-      window.open('https://github.com/AyazCute1655/Sunucuk/issues','_blank');
-    });
+    if(viewIssuesBtn) viewIssuesBtn.addEventListener('click', ()=>{ window.open('https://github.com/AyazCute1655/Sunucuk/issues','_blank'); });
+
+    // Admin buttons
+    if(refreshAdminBtn) refreshAdminBtn.addEventListener('click', ()=>{ fetchAdminIssues(); });
+    if(openIssuesAdmin) openIssuesAdmin.addEventListener('click', ()=>{ window.open('https://github.com/AyazCute1655/Sunucuk/issues','_blank'); });
 
     // === FORM SUBMISSION: open prefilled GitHub issue ===
     document.getElementById('whitelistForm').addEventListener('submit', (e)=>{
@@ -343,13 +380,77 @@
 
       const title = encodeURIComponent(`Whitelist Başvurusu: ${mcname}`);
       const bodyText = `Kullanıcı adı: ${mcname}%0A%0ANeden katılmak istiyorsun?: ${encodeURIComponent(reason)}%0A%0ADeneyim: ${encodeURIComponent(experience)}%0A%0AGönderildi: ${new Date().toLocaleString()}`;
-      // labels param may prefill labels; users must be logged into GitHub to actually submit.
       const labels = encodeURIComponent('whitelist');
       const issuesUrl = `https://github.com/AyazCute1655/Sunucuk/issues/new?title=${title}&body=${bodyText}&labels=${labels}`;
-      window.open(issuesUrl,'_blank');
+
+      // Try to open GitHub issue prefill in new tab
+      const opened = window.open(issuesUrl, '_blank');
+      if(!opened){
+        // popup blocked — fallback to copying body
+        copyToClipboard(decodeURIComponent(bodyText.replace(/%0A/g,'\n')));
+        alert('Yeni sekme açılamadı (popup blocked). Başvuru metni panoya kopyalandı — GitHub Issues sayfasına gidip yeni issue oluşturup yapıştırabilirsin.');
+      }
     });
 
-    document.getElementById('cancelApply').addEventListener('click', ()=>{applyFormWrap.style.display='none';applyLocked.style.display='block';});
+    // No-GitHub fallback: copies filled application text to clipboard
+    noGithubBtn.addEventListener('click', ()=>{
+      const f = document.getElementById('whitelistForm');
+      const mcname = f.mcname.value.trim() || '[Kullanıcı adı]';
+      const reason = f.reason.value.trim() || '[Neden]';
+      const experience = f.experience.value.trim() || '[Deneyim]';
+      const text = `Whitelist Başvurusu\n\nKullanıcı adı: ${mcname}\n\nNeden katılmak istiyorsun?: ${reason}\n\nDeneyim: ${experience}`;
+      copyToClipboard(text);
+      alert('Başvuru metni kopyalandı. Discord veya mail ile bize göndererek başvurunu tamamlayabilirsin.');
+    });
+
+    document.getElementById('cancelApply').addEventListener('click', ()=>{ document.getElementById('whitelistForm').reset(); });
+
+    function copyToClipboard(text){
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).catch(()=>{
+          // fallback
+          const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy')}catch(e){} ta.remove();
+        });
+      } else {
+        const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy')}catch(e){} ta.remove();
+      }
+    }
+
+    // === Admin: fetch open whitelist issues (read-only) ===
+    async function fetchAdminIssues(){
+      if(!isAdminAuthed){ alert('Önce şifre ile giriş yapmalısın.'); return; }
+      adminList.innerHTML = 'Yükleniyor...';
+      try{
+        // public repo read: unauthenticated requests OK but rate-limited
+        const url = 'https://api.github.com/repos/AyazCute1655/Sunucuk/issues?labels=whitelist&state=open&per_page=100';
+        const res = await fetch(url, { headers: { Accept: 'application/vnd.github.v3+json' } });
+        if(!res.ok) throw new Error('GitHub API hatası: ' + res.status);
+        const issues = await res.json();
+        if(!Array.isArray(issues) || issues.length === 0){ adminList.innerHTML = '<div style="color:var(--muted)">Açık whitelist başvurusu yok.</div>'; return; }
+
+        adminList.innerHTML = '';
+        issues.forEach(issue =>{
+          const div = document.createElement('div'); div.className = 'admin-item';
+          const a = document.createElement('a'); a.href = issue.html_url; a.target = '_blank'; a.textContent = issue.title; a.style.fontWeight = '700'; a.style.color = '#eaf8e8';
+          div.appendChild(a);
+          const meta = document.createElement('div'); meta.className = 'meta';
+          const created = new Date(issue.created_at).toLocaleString();
+          meta.innerHTML = `#${issue.number} — ${issue.user.login} • ${created}`;
+          div.appendChild(meta);
+          if(issue.body){
+            const bodySnippet = document.createElement('div'); bodySnippet.style.marginTop = '8px'; bodySnippet.style.color = 'var(--muted)';
+            let txt = issue.body.replace(/\r/g,'');
+            if(txt.length > 300) txt = txt.slice(0,300) + '...';
+            bodySnippet.textContent = txt;
+            div.appendChild(bodySnippet);
+          }
+          adminList.appendChild(div);
+        });
+      }catch(err){
+        console.error(err);
+        adminList.innerHTML = '<div style="color:var(--danger)">Başvurular alınamadı: ' + err.message + '</div>';
+      }
+    }
 
     // === Existing server status code ===
     const el = {
@@ -419,7 +520,7 @@
     }
     fetchServer(); setInterval(fetchServer,30000);
 
-    // Security note: This password protection is client-side only (password present in JS). For real security, use a server-side solution or a service that supports password-protected pages (Netlify + basic auth, Cloudflare Worker, or GitHub Pages behind proxy).
+    // Security note: This password protection for admin is client-side only (password present in JS). For real security, use a server-side solution or a service that supports password-protected pages (Netlify + basic auth, Cloudflare Worker, or GitHub Pages behind proxy).
   </script>
 </body>
 </html>
