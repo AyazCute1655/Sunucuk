@@ -71,6 +71,11 @@
     /* FAQ */
     .faq-item{margin-bottom:8px}
 
+    /* Modal / password gate */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999}
+    .pwd-box{background:var(--card);padding:18px;border-radius:10px;width:90%;max-width:420px}
+    .pwd-box input{width:100%;padding:10px;font-size:16px}
+
     /* Responsive */
     @media (max-width:880px){
       .grid{grid-template-columns:1fr;}
@@ -102,7 +107,7 @@
           <a href="#home" class="nav-link active">Ana Sayfa</a>
           <a href="#rules" class="nav-link">Kurallar</a>
           <a href="#about" class="nav-link">Sunucu Hakkında</a>
-          <a href="#apply" class="nav-link">Başvuru</a>
+          <a href="#apply" class="nav-link" id="applyNav">Başvuru</a>
           <a href="#staff" class="nav-link">Yetkililer</a>
           <a href="#faq" class="nav-link">SSS</a>
         </div>
@@ -184,15 +189,37 @@
             <p>Kısa açıklama: BoxPvP tarzı hızlı maçlar, adil eşleşme ve eğlenceli komutlar.</p>
           </section>
 
-          <!-- APPLY -->
+          <!-- APPLY (password-protected inline form) -->
           <section id="apply" class="panel">
-            <h2>Başvuru / Whitelist</h2>
-            <p>Basit başvuru için GitHub Issues kullanıyoruz. Aşağıdaki butonla yeni bir issue açıp başvurunu yapabilirsin. Başvurunda lütfen; MC kullanıcı adın, neden katılmak istediğin ve önceki deneyimin kısa bir özetini yaz.</p>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-              <a class="btn primary" id="newIssueBtn" href="https://github.com/AyazCute1655/Sunucuk/issues/new?title=Whitelist%20Başvurusu:%20KullanıcıAdı" target="_blank">Yeni Başvuru Oluştur</a>
-              <button class="btn" id="copyTemplateBtn">Başvuru Şablonunu Kopyala</button>
+            <h2>Başvuru / Whitelist (Şifreli Erişim)</h2>
+            <p>Bu bölüm şifre korumalıdır. Yetkiliysen şifreyi girerek başvuru formunu doldurabilirsin.</p>
+            <div id="applyLocked">
+              <button class="btn primary" id="enterPwdBtn">Giriş Yap (Şifre)</button>
+              <button class="btn" id="viewIssuesBtn">Başvuruları Gör (Issues)</button>
             </div>
-            <div style="margin-top:10px;color:var(--muted);font-size:13px">İstersen ben Netlify/Forms ya da Google Form ile otomatik toplama da kurarım.</div>
+
+            <div id="applyForm" style="display:none;margin-top:12px">
+              <form id="whitelistForm">
+                <div class="form-row">
+                  <label>Minecraft Kullanıcı Adı</label>
+                  <input name="mcname" required />
+                </div>
+                <div class="form-row">
+                  <label>Neden sunucuya katılmak istiyorsun?</label>
+                  <textarea name="reason" rows="3" required></textarea>
+                </div>
+                <div class="form-row">
+                  <label>Deneyimin (kısa)</label>
+                  <input name="experience" />
+                </div>
+                <div style="display:flex;gap:8px;margin-top:8px">
+                  <button class="btn primary" type="submit">Başvuruyu Oluştur</button>
+                  <button class="btn" type="button" id="cancelApply">İptal</button>
+                </div>
+                <p style="font-size:13px;color:var(--muted);margin-top:8px">Not: Başvuru gönderildiğinde GitHub Issues üzerinde yeni bir issue olarak açılacaktır; kullanıcıların GitHub hesabı ile oturum açması gerekebilir.</p>
+              </form>
+            </div>
+
           </section>
 
           <!-- STAFF -->
@@ -244,12 +271,87 @@
     </div>
   </div>
 
+  <!-- Password modal (hidden by default) -->
+  <div id="pwdOverlay" class="overlay" style="display:none">
+    <div class="pwd-box">
+      <h3>Şifre ile Giriş</h3>
+      <p style="font-size:13px;color:var(--muted)">Lütfen şifreyi girin. (Bu yöntem client-side'dır — gerçek koruma için sunucu tarafı önerilir.)</p>
+      <input id="pwdInput" type="password" placeholder="Şifre" />
+      <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+        <button class="btn" id="pwdCancel">İptal</button>
+        <button class="btn primary" id="pwdSubmit">Giriş</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // --- Server config
     const SERVER = 'boxpvpkrallari.aternos.me';
     const API = `https://api.mcsrvstat.us/2/${encodeURIComponent(SERVER)}`;
 
-    // --- DOM refs
+    // === PASSWORD PROTECTION (client-side) ===
+    // Kullanıcının verdiği şifre (senin belirttiğin):
+    const ACCESS_PASSWORD = '12345678901234567890*1234567890*-';
+
+    const applyNav = document.getElementById('applyNav');
+    const enterPwdBtn = document.getElementById('enterPwdBtn');
+    const pwdOverlay = document.getElementById('pwdOverlay');
+    const pwdInput = document.getElementById('pwdInput');
+    const pwdSubmit = document.getElementById('pwdSubmit');
+    const pwdCancel = document.getElementById('pwdCancel');
+    const applyFormWrap = document.getElementById('applyForm');
+    const applyLocked = document.getElementById('applyLocked');
+    const viewIssuesBtn = document.getElementById('viewIssuesBtn');
+
+    // Open overlay when clicking nav or button
+    applyNav.addEventListener('click', (e)=>{
+      e.preventDefault();
+      pwdOverlay.style.display='flex';
+      pwdInput.value='';
+      pwdInput.focus();
+    });
+    enterPwdBtn.addEventListener('click', ()=>{pwdOverlay.style.display='flex'; pwdInput.value=''; pwdInput.focus();});
+    pwdCancel.addEventListener('click', ()=>{pwdOverlay.style.display='none';});
+
+    pwdSubmit.addEventListener('click', ()=>{
+      const v = pwdInput.value || '';
+      if(v === ACCESS_PASSWORD){
+        // Show form
+        pwdOverlay.style.display='none';
+        applyFormWrap.style.display='block';
+        applyLocked.style.display='none';
+        // Scroll to apply form
+        document.getElementById('apply').scrollIntoView({behavior:'smooth'});
+      } else {
+        alert('Şifre yanlış. Tekrar deneyin.');
+      }
+    });
+
+    // View issues (submissions) -- opens repo issues page
+    viewIssuesBtn.addEventListener('click', ()=>{
+      window.open('https://github.com/AyazCute1655/Sunucuk/issues','_blank');
+    });
+
+    // === FORM SUBMISSION: open prefilled GitHub issue ===
+    document.getElementById('whitelistForm').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const f = e.target;
+      const mcname = f.mcname.value.trim();
+      const reason = f.reason.value.trim();
+      const experience = f.experience.value.trim();
+      if(!mcname || !reason) { alert('Lütfen gerekli alanları doldurun.'); return; }
+
+      const title = encodeURIComponent(`Whitelist Başvurusu: ${mcname}`);
+      const bodyText = `Kullanıcı adı: ${mcname}%0A%0ANeden katılmak istiyorsun?: ${encodeURIComponent(reason)}%0A%0ADeneyim: ${encodeURIComponent(experience)}%0A%0AGönderildi: ${new Date().toLocaleString()}`;
+      // labels param may prefill labels; users must be logged into GitHub to actually submit.
+      const labels = encodeURIComponent('whitelist');
+      const issuesUrl = `https://github.com/AyazCute1655/Sunucuk/issues/new?title=${title}&body=${bodyText}&labels=${labels}`;
+      window.open(issuesUrl,'_blank');
+    });
+
+    document.getElementById('cancelApply').addEventListener('click', ()=>{applyFormWrap.style.display='none';applyLocked.style.display='block';});
+
+    // === Existing server status code ===
     const el = {
       status: document.getElementById('status'),
       versionText: document.getElementById('versionText'),
@@ -266,12 +368,10 @@
       sideJoin: document.getElementById('sideJoin')
     };
 
-    // Init texts
     el.joinBtn.href = `minecraft://${SERVER}`;
     el.sideJoin.href = `minecraft://${SERVER}`;
     document.getElementById('srvInfo').textContent = SERVER;
 
-    // Copy IP
     el.copyBtn.addEventListener('click', async () => {
       try{
         await navigator.clipboard.writeText(SERVER);
@@ -280,31 +380,14 @@
       }catch(e){alert('Kopyalama başarısız: '+e)}
     });
 
-    // Copy application template
     document.getElementById('copyTemplateBtn').addEventListener('click', async ()=>{
       const template = `Kullanıcı adı:\nNeden sunucuya katılmak istiyorsun?:\nDeneyimin (kısa):\nDil/Yaş (isteğe bağlı):`;
       try{await navigator.clipboard.writeText(template);alert('Başvuru şablonu kopyalandı. Yeni issue açıp yapıştırabilirsin.');}catch(e){alert('Kopyalama hatası: '+e)}
     });
 
-    // Accordion behaviour
-    document.querySelectorAll('.acc-head').forEach(h=>{
-      h.addEventListener('click', ()=>{
-        const body = h.nextElementSibling;
-        const open = body.style.display === 'block';
-        document.querySelectorAll('.acc-body').forEach(b=>b.style.display='none');
-        if(!open) body.style.display='block';
-      });
-    });
+    document.querySelectorAll('.acc-head').forEach(h=>{h.addEventListener('click', ()=>{const body = h.nextElementSibling;const open = body.style.display === 'block';document.querySelectorAll('.acc-body').forEach(b=>b.style.display='none');if(!open) body.style.display='block';});});
+    document.querySelectorAll('.nav-link').forEach(a=>{a.addEventListener('click',(e)=>{document.querySelectorAll('.nav-link').forEach(x=>x.classList.remove('active'));a.classList.add('active');});});
 
-    // Navbar smooth highlighting
-    document.querySelectorAll('.nav-link').forEach(a=>{
-      a.addEventListener('click',(e)=>{
-        document.querySelectorAll('.nav-link').forEach(x=>x.classList.remove('active'));
-        a.classList.add('active');
-      });
-    });
-
-    // Fetch server info
     async function fetchServer(){
       try{
         const res = await fetch(API);
@@ -336,7 +419,7 @@
     }
     fetchServer(); setInterval(fetchServer,30000);
 
-    // Nothing else required after committing HTML: GitHub Pages will auto-deploy. If you want dynamic backend features (forms, DB), extra setup needed.
+    // Security note: This password protection is client-side only (password present in JS). For real security, use a server-side solution or a service that supports password-protected pages (Netlify + basic auth, Cloudflare Worker, or GitHub Pages behind proxy).
   </script>
 </body>
 </html>
